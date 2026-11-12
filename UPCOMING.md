@@ -32,6 +32,11 @@
 	* Added an opt-in USB CDC-ACM serial console (`ENABLE_DEV_CONSOLE` when a `/.develop` file is present on the SD card) with commands for automated host testing (`ping`, `storage on|off`, `flash <name>`, `reboot`, `help`) and a ring-buffered `ENABLE_LOG` build flag that preserves release optimization levels.
 	* See [`docs/developer_guide.md`](docs/developer_guide.md) for usage details.
 
+7. **Reorder Samples in Sample Loader (All 3 Devices)**
+	* Pressing **`[Rec]`** on the Sample Loader screen toggles an **Arrange** set of actions: **`Move up`** and **`Move down`** move the highlighted instrument (or `[Shift]`-selected block of instruments) one slot up or down the list. The sample in the target slot swaps into the slot that was freed.
+	* Moves are queued: the list shows the new order straight away (moved slots are marked with `*`) and nothing is changed until you press **`Apply`**, which performs all of them in one operation. **`Cancel`** discards the queued moves. Leaving the Sample Loader also discards them.
+	* **`Update patterns`** (on by default) rewrites every pattern step, including undo history, so it keeps playing the same sample after a move. With it off, patterns keep their slot numbers and play whatever sample now occupies those slots. It is locked once a move is queued.
+
 ### Changed & Fixed
 
 * **`CHIP` Synth Engine Performance Overhaul (Tracker+ & Tracker Mini)**:
