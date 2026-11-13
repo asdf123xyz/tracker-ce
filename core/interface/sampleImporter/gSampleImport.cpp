@@ -1065,11 +1065,11 @@ void cSampleImporter::showArrangeLabels()
     display.setControlText2(label[3], "");
     display.setControlValue(label[3], 0);
 
-    display.setControlText(label[4], "Apply");
+    display.setControlText(label[4], "Cancel");
     display.setControlText2(label[4], "");
     display.setControlValue(label[4], 0);
 
-    display.setControlText(label[5], "Cancel");
+    display.setControlText(label[5], "Apply");
     display.setControlText2(label[5], "");
     display.setControlValue(label[5], 0);
 

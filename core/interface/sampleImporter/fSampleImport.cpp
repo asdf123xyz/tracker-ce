@@ -2595,8 +2595,9 @@ void cSampleImporter::setArrangeScreenFunct()
     ip->setButtonObj(interfaceButton0, buttonPress, functMoveUp);
     ip->setButtonObj(interfaceButton1, buttonPress, functMoveDown);
     // button 2 keeps Preview, 3 is unused, 6 and 7 keep Preview Vol and Memory
-    ip->setButtonObj(interfaceButton4, buttonPress, functApplyArrange);
-    ip->setButtonObj(interfaceButton5, buttonPress, functCancelArrange);
+    // Cancel before Apply, like the confirmation popups
+    ip->setButtonObj(interfaceButton4, buttonPress, functCancelArrange);
+    ip->setButtonObj(interfaceButton5, buttonPress, functApplyArrange);
 }
 
 void cSampleImporter::resetArrangeOrder()
