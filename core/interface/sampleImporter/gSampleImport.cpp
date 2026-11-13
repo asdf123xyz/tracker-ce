@@ -1061,9 +1061,9 @@ void cSampleImporter::showArrangeLabels()
     display.setControlText2(label[1], "");
     display.setControlValue(label[1], 0);
 
-    display.setControlText(label[3], "Update");
-    display.setControlText2(label[3], arrangeUpdatePatterns ? "patterns: On" : "patterns: Off");
-    display.setControlValue(label[3], 1);
+    display.setControlText(label[3], "");
+    display.setControlText2(label[3], "");
+    display.setControlValue(label[3], 0);
 
     display.setControlText(label[4], "Apply");
     display.setControlText2(label[4], "");
@@ -1074,6 +1074,45 @@ void cSampleImporter::showArrangeLabels()
     display.setControlValue(label[5], 0);
 
     arrangeColorControl();
+}
+
+void cSampleImporter::showUpdatePatternsPopup()
+{
+    mtPopups.showInfoPopup("Update patterns to follow the moved samples?",
+                           "Skip keeps patterns on the same slot numbers.");
+
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        display.setControlStyle(label[i],
+                                (controlStyleCenterX | controlStyleCenterY | controlStyleFont3));
+        display.setControlStyle2(label[i],
+                                 (controlStyleCenterX | controlStyleCenterY | controlStyleFont2));
+        display.setControlPosition(label[i], (800 / 8) * i + (800 / 16), 424);
+        display.setControlSize(label[i], 800 / 8 - 6, 55);
+        display.setControlText(label[i], "");
+        display.setControlText2(label[i], "");
+        display.setControlValue(label[i], 0);
+    }
+
+    const char* const texts[] = { "Cancel", "Skip", "Update" };
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        uint8_t idx = 5 + i;
+        display.setControlText(label[idx], texts[i]);
+        display.setControlShow(label[idx]);
+        display.setControlColors(label[idx], display.getTheme().highlightedButtonLabelsColors);
+        display.setAddControlStyle(label[idx], controlStyleBackground);
+    }
+
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        display.refreshControl(label[i]);
+    }
+
+    display.setControlValue(bgLabel, 255);
+    display.refreshControl(bgLabel);
+
+    display.synchronizeRefresh();
 }
 
 void cSampleImporter::arrangeColorControl()
@@ -1092,8 +1131,8 @@ void cSampleImporter::arrangeColorControl()
 
     display.setControlColors(label[0], canMoveUp ? active : inactive);
     display.setControlColors(label[1], canMoveDown ? active : inactive);
-    // Update patterns is locked while moves are queued, Apply and Cancel need queued moves
-    display.setControlColors(label[3], arrangePending ? inactive : active);
+    // Apply and Cancel need queued moves
+    display.setControlColors(label[3], inactive);
     display.setControlColors(label[4], arrangePending ? active : inactive);
     display.setControlColors(label[5], arrangePending ? active : inactive);
 

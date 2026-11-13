@@ -35,7 +35,7 @@
 7. **Reorder Samples in Sample Loader (All 3 Devices)**
 	* Pressing **`[Rec]`** on the Sample Loader screen toggles an **Arrange** set of actions: **`Move up`** and **`Move down`** move the highlighted instrument (or `[Shift]`-selected block of instruments) one slot up or down the list. The sample in the target slot swaps into the slot that was freed.
 	* Moves are queued: the list shows the new order straight away (moved slots are marked with `*`) and nothing is changed until you press **`Apply`**, which performs all of them in one operation. **`Cancel`** discards the queued moves. Leaving the Sample Loader also discards them.
-	* **`Update patterns`** (on by default) rewrites every pattern step, including undo history, so it keeps playing the same sample after a move. With it off, patterns keep their slot numbers and play whatever sample now occupies those slots. It is locked once a move is queued.
+	* **`Apply`** asks whether to update patterns: **`Update`** rewrites every pattern step, including undo history, so it keeps playing the same sample after the move. **`Skip`** keeps the slot numbers in patterns, so they play whatever sample now occupies those slots. **`Cancel`** returns to arranging with the queued moves intact.
 
 ### Changed & Fixed
 

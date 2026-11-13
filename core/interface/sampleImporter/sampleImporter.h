@@ -120,7 +120,7 @@ class cSampleImporter : public ModuleBase
     // arrange mode - toggled with Rec, swaps the bottom actions for slot reordering. Moves
     // are queued in arrangeOrder and only touch the samples when applied.
     bool arrangeMode = false;
-    bool arrangeUpdatePatterns = true;
+    bool arrangeUpdatePatterns = true;             // answer to the popup shown by Apply
     bool arrangePending = false;                   // queued moves not applied yet
     bool arrangeApplying = false;                  // apply operation running
     uint8_t arrangeOrder[kSampleInstrumentsCount]; // arrangeOrder[shownSlot] = actual slot
@@ -138,6 +138,9 @@ class cSampleImporter : public ModuleBase
     void resetArrangeOrder();
     void moveSelectedInstruments(int8_t direction);
     void applyArrange();
+    void showUpdatePatternsPopup();
+    void closeUpdatePatternsPopup();
+    void startArrangeApply();
     void cancelArrange();
     void finishArrangeApply(bool success);
     void refreshAfterArrangeChange();
