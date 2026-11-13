@@ -32,6 +32,10 @@
 	* Added an opt-in USB CDC-ACM serial console (`ENABLE_DEV_CONSOLE` when a `/.develop` file is present on the SD card) with commands for automated host testing (`ping`, `storage on|off`, `flash <name>`, `reboot`, `help`) and a ring-buffered `ENABLE_LOG` build flag that preserves release optimization levels.
 	* See [`docs/developer_guide.md`](docs/developer_guide.md) for usage details.
 
+7. **`Shift` + Jog Wheel Track Scrolling in the Pattern Editor (Tracker & Tracker+)**
+	* With **`[Rec]`** off, holding **`[Shift]`** while turning the jog wheel moves the cursor from track to track instead of step to step. It moves one track per detent when turned slowly and speeds up when the wheel is spun faster, at half the rate of normal step scrolling. It also works during playback, like the left/right arrows.
+	* While `[Shift]` is held, the track mute buttons follow the cursor: scrolling across the track 8 / 9 boundary switches them between the tracks 1–8 and 9–16 pages without releasing `[Shift]`.
+
 ### Changed & Fixed
 
 * **`CHIP` Synth Engine Performance Overhaul (Tracker+ & Tracker Mini)**:
