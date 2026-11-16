@@ -285,6 +285,8 @@ class cInstrumentEditor : public ModuleBase
     void showWtWarpX();
     void showWtWarpY();
     void showWtSustain();
+    void showTriggerSource();
+    void showTriggerRepeat();
 
     static void changeSelectedEnv(int16_t value);
     static void changeSelectedEnvState(int16_t value);
@@ -301,6 +303,8 @@ class cInstrumentEditor : public ModuleBase
     static void changeSelectedWtWarpX(int16_t value);
     static void changeSelectedWtWarpY(int16_t value);
     static void changeSelectedWtSustain(int16_t value);
+    static void changeSelectedTriggerSource(int16_t value);
+    static void changeSelectedTriggerRepeat(int16_t value);
 
     void changeEnvState(int idx, int16_t value);
     void changeEnvAttack(int idx, int16_t value);
@@ -316,6 +320,8 @@ class cInstrumentEditor : public ModuleBase
     void changeWtWarpX(int idx, int16_t value);
     void changeWtWarpY(int idx, int16_t value);
     void changeWtSustain(int idx, int16_t value);
+    void changeTriggerSource(int idx, int16_t value);
+    void changeTriggerRepeat(int idx, int16_t value);
 
     void setDefaultEnvAttack();
     void setDefaultEnvDecay();
@@ -328,6 +334,8 @@ class cInstrumentEditor : public ModuleBase
     void setDefaultWtWave();
     void setDefaultWtWarp();
     void setDefaultWtSustain();
+    void setDefaultTriggerSource();
+    void setDefaultTriggerRepeat();
 
     //----------------------------------
     // instrument synthesizer

@@ -31,8 +31,12 @@ class envelopeGenerator
         float sustain;    // 	= 1.0;
         uint16_t release; // 	= 50;
 
-        uint8_t loop; // 		= 0; 0=ADSR, 1=LFO, 2=WT Env, 3=WT LFO
+        uint8_t loop; // 		= 0; 0=ADSR, 1=LFO, 2=WT Env, 3=WT LFO, 4=Trigger
         uint8_t enable;
+
+        // Trigger envelopes are evaluated by the player engine (see TriggerEnvelope.h), never by
+        // envelopeGenerator or the AudioPlayMemory amp envelope.
+        static constexpr uint8_t kTypeTrigger = 4;
 
         bool isAdsrEnv() const { return enable && loop == 0; }
         bool isStandardLfo() const { return enable && loop == 1; }
@@ -40,10 +44,14 @@ class envelopeGenerator
         bool isWtLfo() const { return enable && loop == 3; }
         bool isAnyLfo() const { return enable && (loop == 1 || loop == 3); }
         bool isAnyEnv() const { return enable && (loop == 0 || loop == 2); }
+        bool isTrigger() const { return enable && loop == kTypeTrigger; }
     };
     static_assert(sizeof(strEnv) == 20, "strEnv size must be 20 bytes for backward compatibility");
 
     static const strEnv s_defaultEnvelope;
+    // Zero-output envelope used in place of a Trigger-type slot, whose output comes from
+    // TriggerEnvelope instead of this generator.
+    static const strEnv s_idleEnvelope;
 
     envelopeGenerator();
 

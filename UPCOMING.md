@@ -94,6 +94,11 @@
 	* Added options in **`Config → General → File Manager`:** `Confirm all`, `Confirm delete`, `Never ask`. System folders are actively protected.
 	* Integrated the **File Viewer** directly into File Manager (**Button `View`** / **Enter**): opens any `.jpg`/`.jpeg` (`800 × 390` px) or text file (`.txt`, `.md`, `.json`, `.ini`, `.cfg`, `.log`, up to `128 KB` / `8,192` lines with `Up/Down/Jog` & `PgUp/PgDn`) from any folder, with sibling navigation (`Left/Right` / `<<` / `>>`). See [`docs/info_viewer.md`](docs/info_viewer.md).
 
+20. **Trigger Envelopes - Cross-Track Modulation (All 3 Devices)**
+	* New **`Trigger`** type in **Instrument Automation (2/2)** for all 7 destinations (**Volume**, **Panning**, **Cutoff**, **Wavetable Position**, **Granular Position**, **Granular Length**, **Finetune**).
+	* A tempo-synced envelope (**Shape**, **Steps**, **Source**, bipolar **Amount**, **Repeat** `1x`–`64x` / `Inf`) that restarts whenever the chosen **Source** instrument plays a note on any track - e.g. duck a pad's volume on every kick, pump a hi-hat's cutoff on every snare, or gate a pad four times per kick.
+	* Stored in the existing automation fields, so `.pti` files and projects keep the same layout. See [`docs/trigger_envelopes.md`](docs/trigger_envelopes.md).
+
 ### Changed & Fixed
 
 * **Unified `/System/` SD Card Layout & Hidden `/.system/` Support (All 3 Devices)**:
