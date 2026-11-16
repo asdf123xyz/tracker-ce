@@ -16,6 +16,18 @@ const envelopeGenerator::strEnv envelopeGenerator::s_defaultEnvelope = {
     .enable = 0
 };
 
+const envelopeGenerator::strEnv envelopeGenerator::s_idleEnvelope = {
+    .amount = 0.0f,
+    .delay = 0,
+    .attack = 0,
+    .hold = 0,
+    .decay = 0,
+    .sustain = 0.0f,
+    .release = 0,
+    .loop = 0,
+    .enable = 0
+};
+
 envelopeGenerator::envelopeGenerator() : envelope(const_cast<strEnv*>(&s_defaultEnvelope))
 {
 }
@@ -27,6 +39,10 @@ void envelopeGenerator::begin(Timer* timer)
 
 void envelopeGenerator::init(strEnv* _env)
 {
+    if (_env->loop == strEnv::kTypeTrigger)
+    {
+        _env = const_cast<strEnv*>(&s_idleEnvelope);
+    }
     envelope = _env;
     decay = 0.0f;
     release = 0.0f;

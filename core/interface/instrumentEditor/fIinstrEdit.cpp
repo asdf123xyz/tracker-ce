@@ -3,6 +3,7 @@
 
 #include "core/interfaceMenuPopup.h"
 #include "core/interfacePopups.h"
+#include "TriggerEnvelope.h"
 #include "mtAudioEngine.h"
 #include "mtPadBoard.h"
 #include "mtPadsBacklight.h"
@@ -22,6 +23,12 @@
 
 cInstrumentEditor instrumentEditor;
 static cInstrumentEditor* IE = &instrumentEditor;
+
+static constexpr uint8_t kEnvTypeTrigger = envelopeGenerator::strEnv::kTypeTrigger;
+// Default Trigger duration ("4 steps") in the shared LFO speed table.
+static constexpr uint8_t kTriggerDefaultSpeedOther = 10;
+static constexpr uint8_t kTriggerDefaultSpeedAmp =
+  kTriggerDefaultSpeedOther - ENVELOPE_SPEED_CONSTRAIN_OFFSET;
 
 static void functPlayAction();
 static void functDelete(uint8_t state);
@@ -472,7 +479,8 @@ void cInstrumentEditor::changeParamValue(int value, ValueChangeSource source)
             case 12:
             {
                 const uint8_t envSlot = automationDestToEnvSlot(IE->selectedEnvelope);
-                if (IE->editorInstrument->envelope[envSlot].loop == 1)
+                if (IE->editorInstrument->envelope[envSlot].loop == 1 ||
+                    IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
                     cInstrumentEditor::changeSelectedLfoShape(invert ? -value : value);
                 else if (IE->editorInstrument->envelope[envSlot].loop >= 2)
                     cInstrumentEditor::changeSelectedWtWave(value);
@@ -484,7 +492,8 @@ void cInstrumentEditor::changeParamValue(int value, ValueChangeSource source)
             {
                 const uint8_t envSlot = automationDestToEnvSlot(IE->selectedEnvelope);
                 if (IE->editorInstrument->envelope[envSlot].loop == 1 ||
-                    IE->editorInstrument->envelope[envSlot].loop == 3)
+                    IE->editorInstrument->envelope[envSlot].loop == 3 ||
+                    IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
                     cInstrumentEditor::changeSelectedLfoSpeed(invert ? -value : value);
                 else
                     cInstrumentEditor::changeSelectedEnvDecay(value);
@@ -495,6 +504,8 @@ void cInstrumentEditor::changeParamValue(int value, ValueChangeSource source)
                 const uint8_t envSlot = automationDestToEnvSlot(IE->selectedEnvelope);
                 if (IE->editorInstrument->envelope[envSlot].loop == 1)
                     cInstrumentEditor::changeSelectedLfoAmount(value);
+                else if (IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+                    cInstrumentEditor::changeSelectedTriggerSource(value);
                 else if (IE->editorInstrument->envelope[envSlot].loop == 2)
                     cInstrumentEditor::changeSelectedWtWarpXY(value);
                 else if (IE->editorInstrument->envelope[envSlot].loop == 3)
@@ -512,6 +523,8 @@ void cInstrumentEditor::changeParamValue(int value, ValueChangeSource source)
                     cInstrumentEditor::changeSelectedWtSustain(value);
                 else if (IE->editorInstrument->envelope[envSlot].loop == 3)
                     cInstrumentEditor::changeSelectedWtWarpY(value);
+                else if (IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+                    cInstrumentEditor::changeSelectedLfoAmount(value);
                 break;
             }
             case 16:
@@ -522,6 +535,8 @@ void cInstrumentEditor::changeParamValue(int value, ValueChangeSource source)
                     cInstrumentEditor::changeSelectedEnvAmount(value);
                 else if (IE->editorInstrument->envelope[envSlot].loop == 3)
                     cInstrumentEditor::changeSelectedLfoAmount(value);
+                else if (IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+                    cInstrumentEditor::changeSelectedTriggerRepeat(value);
                 break;
             }
                 //		case 17: changeEnvLoop(value); 		break;
@@ -560,7 +575,8 @@ static void functSelectParams(uint8_t button, uint8_t state)
                 cInstrumentEditor::changeSelectedEnvState(1);
             if (button == 3 && IE->selectedPlace[IE->mode] == 2)
             {
-                if (IE->editorInstrument->envelope[envSlot].loop == 1)
+                if (IE->editorInstrument->envelope[envSlot].loop == 1 ||
+                    IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
                     cInstrumentEditor::changeSelectedLfoShape(1);
                 else if (IE->editorInstrument->envelope[envSlot].loop >= 2)
                     cInstrumentEditor::changeSelectedWtWave(1);
@@ -568,7 +584,8 @@ static void functSelectParams(uint8_t button, uint8_t state)
             if (button == 4 && IE->selectedPlace[IE->mode] == 3)
             {
                 if (IE->editorInstrument->envelope[envSlot].loop == 1 ||
-                    IE->editorInstrument->envelope[envSlot].loop == 3)
+                    IE->editorInstrument->envelope[envSlot].loop == 3 ||
+                    IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
                     cInstrumentEditor::changeSelectedLfoSpeed(1);
             }
 
@@ -636,7 +653,8 @@ static void functSelectParams(uint8_t button, uint8_t state)
                 break;
             case 12: break;
             case 13:
-                if (IE->editorInstrument->envelope[envSlot].loop == 1)
+                if (IE->editorInstrument->envelope[envSlot].loop == 1 ||
+                    IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
                     IE->addNode(cInstrumentEditor::changeSelectedLfoShape, node, 1);
                 else if (IE->editorInstrument->envelope[envSlot].loop >= 2)
                     IE->addNode(cInstrumentEditor::changeSelectedWtWave, node);
@@ -645,7 +663,8 @@ static void functSelectParams(uint8_t button, uint8_t state)
                 break;
             case 14:
                 if (IE->editorInstrument->envelope[envSlot].loop == 1 ||
-                    IE->editorInstrument->envelope[envSlot].loop == 3)
+                    IE->editorInstrument->envelope[envSlot].loop == 3 ||
+                    IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
                     IE->addNode(cInstrumentEditor::changeSelectedLfoSpeed, node, 1);
                 else
                     IE->addNode(cInstrumentEditor::changeSelectedEnvDecay, node);
@@ -653,6 +672,8 @@ static void functSelectParams(uint8_t button, uint8_t state)
             case 15:
                 if (IE->editorInstrument->envelope[envSlot].loop == 1)
                     IE->addNode(cInstrumentEditor::changeSelectedLfoAmount, node);
+                else if (IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+                    IE->addNode(cInstrumentEditor::changeSelectedTriggerSource, node);
                 else if (IE->editorInstrument->envelope[envSlot].loop == 2)
                     IE->addNode(cInstrumentEditor::changeSelectedWtWarpXY, node);
                 else if (IE->editorInstrument->envelope[envSlot].loop == 3)
@@ -667,6 +688,8 @@ static void functSelectParams(uint8_t button, uint8_t state)
                     IE->addNode(cInstrumentEditor::changeSelectedWtSustain, node);
                 else if (IE->editorInstrument->envelope[envSlot].loop == 3)
                     IE->addNode(cInstrumentEditor::changeSelectedWtWarpY, node);
+                else if (IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+                    IE->addNode(cInstrumentEditor::changeSelectedLfoAmount, node);
                 break;
             case 17:
                 if (IE->editorInstrument->envelope[envSlot].loop == 0 ||
@@ -674,6 +697,8 @@ static void functSelectParams(uint8_t button, uint8_t state)
                     IE->addNode(cInstrumentEditor::changeSelectedEnvAmount, node);
                 else if (IE->editorInstrument->envelope[envSlot].loop == 3)
                     IE->addNode(cInstrumentEditor::changeSelectedLfoAmount, node);
+                else if (IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+                    IE->addNode(cInstrumentEditor::changeSelectedTriggerRepeat, node);
                 break;
 
             // midi params
@@ -904,6 +929,7 @@ static void functRight()
         {
             IE->selectedPlace[IE->mode] = 4;
         }
+
     }
 
     IE->activateLabelsBorder();
@@ -1129,6 +1155,16 @@ void cInstrumentEditor::changeSelectedLfoAmount(int16_t value)
     IE->changeLfoAmount(IE->selectedEnvelope, value);
 }
 
+void cInstrumentEditor::changeSelectedTriggerSource(int16_t value)
+{
+    IE->changeTriggerSource(IE->selectedEnvelope, value);
+}
+
+void cInstrumentEditor::changeSelectedTriggerRepeat(int16_t value)
+{
+    IE->changeTriggerRepeat(IE->selectedEnvelope, value);
+}
+
 void cInstrumentEditor::changeSelectedWtWave(int16_t value)
 {
     IE->changeWtWave(IE->selectedEnvelope, value);
@@ -1168,8 +1204,11 @@ void cInstrumentEditor::changeEnvState(int idx, int16_t value)
         listPosition = 3;
     else if (IE->editorInstrument->envelope[envIdx].loop == 3)
         listPosition = 4;
+    else if (IE->editorInstrument->envelope[envIdx].loop == kEnvTypeTrigger)
+        listPosition = 5;
 
-    constexpr int kListPositionMax = 4;
+    constexpr int kListPositionMax = 5;
+    const uint8_t previousLoop = IE->editorInstrument->envelope[envIdx].loop;
 
     if (listPosition + value > kListPositionMax)
         listPosition = IE->rollListOver ? 0 : kListPositionMax;
@@ -1205,16 +1244,48 @@ void cInstrumentEditor::changeEnvState(int idx, int16_t value)
         case 3:
             IE->editorInstrument->setAutomationDestEnabled(idx, true);
             IE->editorInstrument->envelope[envIdx].loop = 2; // WT Env
+            if (previousLoop == kEnvTypeTrigger)
+            {
+                IE->editorInstrument->lfo[envIdx].wtBend = 0; // was a source index, not warp
+                IE->editorInstrument->lfo[envIdx].wtSust = 0; // was a repeat count, not sustain
+            }
             if (IE->editorInstrument->envelope[envIdx].decay == 0)
                 IE->editorInstrument->envelope[envIdx].decay = 1000;
             break;
         case 4:
             IE->editorInstrument->setAutomationDestEnabled(idx, true);
             IE->editorInstrument->envelope[envIdx].loop = 3; // WT LFO
+            if (previousLoop == kEnvTypeTrigger)
+            {
+                IE->editorInstrument->lfo[envIdx].wtBend = 0; // was a source index, not warp
+                IE->editorInstrument->lfo[envIdx].wtSust = 0; // was a repeat count, not sustain
+            }
             {
                 uint8_t maxSpd = (envIdx == envAmp) ? CONSTRAIN_SPEED_AMP_ENVELOPE : CONSTRAIN_SPEED_OTHER_ENVELOPE;
                 if (IE->editorInstrument->lfo[envIdx].speed > maxSpd)
                     IE->editorInstrument->lfo[envIdx].speed = 0;
+            }
+            break;
+        case 5:
+            IE->editorInstrument->setAutomationDestEnabled(idx, true);
+            IE->editorInstrument->envelope[envIdx].loop = kEnvTypeTrigger;
+            if (IE->editorInstrument->lfo[envIdx].shape >= lfoShapeCount)
+                IE->editorInstrument->lfo[envIdx].shape = lfoShapeReverseSaw;
+            {
+                const bool isAmp = (envIdx == envAmp);
+                uint8_t maxSpd = isAmp ? CONSTRAIN_SPEED_AMP_ENVELOPE : CONSTRAIN_SPEED_OTHER_ENVELOPE;
+                if (IE->editorInstrument->lfo[envIdx].speed > maxSpd)
+                    IE->editorInstrument->lfo[envIdx].speed =
+                      isAmp ? kTriggerDefaultSpeedAmp : kTriggerDefaultSpeedOther;
+            }
+            if (previousLoop == 2 || previousLoop == 3 ||
+                IE->editorInstrument->lfo[envIdx].wtBend >= kTotalInstrumentsCount)
+            {
+                IE->editorInstrument->lfo[envIdx].wtBend = 0; // packed warp is not a source index
+            }
+            if (previousLoop != kEnvTypeTrigger)
+            {
+                IE->editorInstrument->lfo[envIdx].wtSust = 1; // WT sustain is not a repeat count
             }
             break;
     }
@@ -1492,7 +1563,8 @@ void cInstrumentEditor::changeLfoShape(int idx, int16_t value)
     bool isParamVisible = mtInterface.isInstrumentParamsScreenActive() &&
                           (idx == IE->selectedEnvelope) &&
                           (mode == mtInstrumentEditorMode::mtInstEditModeEnv) &&
-                          IE->editorInstrument->envelope[envIdx].loop == 1;
+                          (IE->editorInstrument->envelope[envIdx].loop == 1 ||
+                           IE->editorInstrument->envelope[envIdx].loop == kEnvTypeTrigger);
 
     if (isParamVisible)
         IE->showLfoShape();
@@ -1541,7 +1613,8 @@ void cInstrumentEditor::changeLfoSpeed(int idx, int16_t value)
                           (idx == IE->selectedEnvelope) &&
                           (mode == mtInstrumentEditorMode::mtInstEditModeEnv) &&
                           (IE->editorInstrument->envelope[envIdx].loop == 1 ||
-                           IE->editorInstrument->envelope[envIdx].loop == 3);
+                           IE->editorInstrument->envelope[envIdx].loop == 3 ||
+                           IE->editorInstrument->envelope[envIdx].loop == kEnvTypeTrigger);
 
     if (isParamVisible)
         IE->showLfoSpeed();
@@ -1551,9 +1624,12 @@ void cInstrumentEditor::changeLfoAmount(int idx, int16_t value)
 {
     const int envIdx = automationDestToEnvSlot(idx);
     float fVal = value * 0.01;
+    // Trigger envelopes are bipolar: a negative amount pulls the destination down (ducking).
+    const float amountMin =
+      (IE->editorInstrument->envelope[envIdx].loop == kEnvTypeTrigger) ? -AMOUNT_MAX : 0.0f;
 
-    if (IE->editorInstrument->lfo[envIdx].amount + fVal < 0)
-        IE->editorInstrument->lfo[envIdx].amount = 0;
+    if (IE->editorInstrument->lfo[envIdx].amount + fVal < amountMin)
+        IE->editorInstrument->lfo[envIdx].amount = amountMin;
     else if (IE->editorInstrument->lfo[envIdx].amount + fVal > AMOUNT_MAX)
         IE->editorInstrument->lfo[envIdx].amount = AMOUNT_MAX;
     else
@@ -1586,7 +1662,8 @@ void cInstrumentEditor::changeLfoAmount(int idx, int16_t value)
                           (idx == IE->selectedEnvelope) &&
                           (mode == mtInstrumentEditorMode::mtInstEditModeEnv) &&
                           (IE->editorInstrument->envelope[envIdx].loop == 1 ||
-                           IE->editorInstrument->envelope[envIdx].loop == 3);
+                           IE->editorInstrument->envelope[envIdx].loop == 3 ||
+                           IE->editorInstrument->envelope[envIdx].loop == kEnvTypeTrigger);
 
     if (isParamVisible)
         IE->showLfoAmount();
@@ -1610,6 +1687,64 @@ static void triggerEnvelopeRefresh(int idx)
     {
         instrumentPlayer[i].setRefreshBit(statusByte);
     }
+}
+
+void cInstrumentEditor::changeTriggerSource(int idx, int16_t value)
+{
+    const int envIdx = automationDestToEnvSlot(idx);
+    if (IE->editorInstrument->envelope[envIdx].loop != kEnvTypeTrigger)
+        return;
+
+    int val = (int)IE->editorInstrument->lfo[envIdx].wtBend + value;
+    val = clamp<int>(val, 0, kTotalInstrumentsCount - 1);
+    IE->editorInstrument->lfo[envIdx].wtBend = (uint8_t)val;
+
+    newFileManager.setInstrumentStructChanged(mtProject.values.lastUsedInstrument);
+    if (mtInterface.isInstrumentParamsScreenActive() && (idx == IE->selectedEnvelope) &&
+        (mode == mtInstrumentEditorMode::mtInstEditModeEnv))
+    {
+        IE->showTriggerSource();
+    }
+}
+
+void cInstrumentEditor::changeTriggerRepeat(int idx, int16_t value)
+{
+    const int envIdx = automationDestToEnvSlot(idx);
+    if (IE->editorInstrument->envelope[envIdx].loop != kEnvTypeTrigger)
+        return;
+
+    // Positions 1..kRepeatMax are repeat counts; the position after kRepeatMax is "Inf".
+    constexpr int kInfPosition = triggerEnvelope::kRepeatMax + 1;
+    const uint8_t stored = IE->editorInstrument->lfo[envIdx].wtSust;
+    int pos = (stored == triggerEnvelope::kRepeatInfinite)
+                ? kInfPosition
+                : clamp<int>(stored, 1, triggerEnvelope::kRepeatMax);
+    pos = clamp<int>(pos + value, 1, kInfPosition);
+    IE->editorInstrument->lfo[envIdx].wtSust =
+      (pos == kInfPosition) ? triggerEnvelope::kRepeatInfinite : (uint8_t)pos;
+
+    newFileManager.setInstrumentStructChanged(mtProject.values.lastUsedInstrument);
+    if (mtInterface.isInstrumentParamsScreenActive() && (idx == IE->selectedEnvelope) &&
+        (mode == mtInstrumentEditorMode::mtInstEditModeEnv))
+    {
+        IE->showTriggerRepeat();
+    }
+}
+
+void cInstrumentEditor::setDefaultTriggerRepeat()
+{
+    const uint8_t envSlot = automationDestToEnvSlot(selectedEnvelope);
+    editorInstrument->lfo[envSlot].wtSust = 1;
+    newFileManager.setInstrumentStructChanged(mtProject.values.lastUsedInstrument);
+    showTriggerRepeat();
+}
+
+void cInstrumentEditor::setDefaultTriggerSource()
+{
+    const uint8_t envSlot = automationDestToEnvSlot(selectedEnvelope);
+    editorInstrument->lfo[envSlot].wtBend = 0;
+    newFileManager.setInstrumentStructChanged(mtProject.values.lastUsedInstrument);
+    showTriggerSource();
 }
 
 void cInstrumentEditor::changeWtWave(int idx, int16_t value)
@@ -2587,7 +2722,9 @@ int16_t cInstrumentEditor::getControlChangeDelta(SampleInstrumentParamsCC param,
             float amount = IE->editorInstrument->envelope[envIdx].loop
                              ? IE->editorInstrument->lfo[envIdx].amount
                              : IE->editorInstrument->envelope[envIdx].amount;
-            float destValue = map((float)cc_value, 0.0f, 127.0f, 0.0f, AMOUNT_MAX);
+            const float amountMin =
+              (IE->editorInstrument->envelope[envIdx].loop == kEnvTypeTrigger) ? -AMOUNT_MAX : 0.0f;
+            float destValue = map((float)cc_value, 0.0f, 127.0f, amountMin, AMOUNT_MAX);
 
             return (int16_t)(100.0f * (destValue - amount));
         }
@@ -3065,7 +3202,8 @@ void cInstrumentEditor::setDefaultValue(uint8_t place)
         case 12:
         {
             const uint8_t envSlot = automationDestToEnvSlot(IE->selectedEnvelope);
-            if (IE->editorInstrument->envelope[envSlot].loop == 1)
+            if (IE->editorInstrument->envelope[envSlot].loop == 1 ||
+                IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
                 setDefaultLfoShape();
             else if (IE->editorInstrument->envelope[envSlot].loop >= 2)
                 setDefaultWtWave();
@@ -3077,7 +3215,8 @@ void cInstrumentEditor::setDefaultValue(uint8_t place)
         {
             const uint8_t envSlot = automationDestToEnvSlot(IE->selectedEnvelope);
             if (IE->editorInstrument->envelope[envSlot].loop == 1 ||
-                IE->editorInstrument->envelope[envSlot].loop == 3)
+                IE->editorInstrument->envelope[envSlot].loop == 3 ||
+                IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
                 setDefaultLfoSpeed();
             else
                 setDefaultEnvDecay();
@@ -3088,6 +3227,8 @@ void cInstrumentEditor::setDefaultValue(uint8_t place)
             const uint8_t envSlot = automationDestToEnvSlot(IE->selectedEnvelope);
             if (IE->editorInstrument->envelope[envSlot].loop == 1)
                 setDefaultLfoAmount();
+            else if (IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+                setDefaultTriggerSource();
             else if (IE->editorInstrument->envelope[envSlot].loop >= 2)
                 setDefaultWtWarp();
             else
@@ -3103,6 +3244,8 @@ void cInstrumentEditor::setDefaultValue(uint8_t place)
                 setDefaultWtSustain();
             else if (IE->editorInstrument->envelope[envSlot].loop == 3)
                 setDefaultWtWarp();
+            else if (IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+                setDefaultLfoAmount();
             break;
         }
         case 16:
@@ -3113,6 +3256,8 @@ void cInstrumentEditor::setDefaultValue(uint8_t place)
                 setDefaultEnvAmount();
             else if (IE->editorInstrument->envelope[envSlot].loop == 3)
                 setDefaultLfoAmount();
+            else if (IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+                setDefaultTriggerRepeat();
             break;
         }
         case 30: setDefaultMidiVelocity(); break;
@@ -3383,6 +3528,11 @@ void cInstrumentEditor::setDefaultLfoSpeed()
     const uint8_t envSlot = automationDestToEnvSlot(IE->selectedEnvelope);
     IE->editorInstrument->lfo[envSlot].speed =
       defaultInstrumentParams.lfo[envSlot].speed;
+    if (IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+    {
+        IE->editorInstrument->lfo[envSlot].speed =
+          (envSlot == envAmp) ? kTriggerDefaultSpeedAmp : kTriggerDefaultSpeedOther;
+    }
 
     uint32_t statusByte = 0;
     switch (envSlot)
@@ -3409,7 +3559,9 @@ void cInstrumentEditor::setDefaultLfoAmount()
 {
     const uint8_t envSlot = automationDestToEnvSlot(IE->selectedEnvelope);
     IE->editorInstrument->lfo[envSlot].amount =
-      defaultInstrumentParams.lfo[envSlot].amount;
+      (IE->editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+        ? 0.0f // bipolar: reset to the centre like the WT warp controls
+        : defaultInstrumentParams.lfo[envSlot].amount;
 
     uint32_t statusByte = 0;
     switch (envSlot)

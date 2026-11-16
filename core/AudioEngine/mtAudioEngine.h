@@ -618,6 +618,13 @@ class playerEngine
     float lastSeqTempo = 0;
 
     envelopeGenerator::strEnv lfoBasedEnvelope[envMax];
+    // Last value written by a Trigger envelope per slot, so the destination gets one final
+    // refresh back to 0 when the envelope ends. kTriggerOutputInactive (outside the -1..1 output
+    // range) forces a refresh when a slot switches back to its Trigger envelope.
+    static constexpr float kTriggerOutputInactive = 100.0f;
+    float lastTriggerOutput[envMax] = { kTriggerOutputInactive, kTriggerOutputInactive,
+                                        kTriggerOutputInactive, kTriggerOutputInactive,
+                                        kTriggerOutputInactive, kTriggerOutputInactive };
     const envelopeGenerator::strEnv passEnvelope = { .amount = 1.0,
                                                      .delay = 0,
                                                      .attack = 0,
@@ -673,6 +680,9 @@ class playerEngine
     //**********************UPDATE HANDLERS
     inline void handleUpdateEndPlayDetect();
     inline void handleUpdateEnvelope(uint8_t type, bool enableCondition);
+    bool isTriggerEnvelopeActive(uint8_t type);
+    inline void handleUpdateTriggerEnvelope(uint8_t type, uint32_t refreshMask);
+    uint8_t getAmpWavetableMode();
     inline void handleUpdateEndReleaseAction();
     inline void handleUpdateRefreshLP1();
     inline void handleUpdateRefreshLP2();

@@ -1,6 +1,7 @@
 #include "ampLogarythmicValues.h"
 #include "mtAudioEngine.h"
 #include "mtSequencer.h"
+#include "TriggerEnvelope.h"
 
 using namespace mtAudioEngineConstans;
 
@@ -88,6 +89,25 @@ inline void playerEngine::handleUpdateEnvelope(uint8_t type, bool enableConditio
 {
     if (enableCondition)
     {
+        if (isTriggerEnvelopeActive(type))
+        {
+            uint32_t refreshMask = envTargetRefreshMask[type];
+            if (type == envAmp)
+            {
+                refreshMask = VOLUME_MASK;
+            }
+            else if (type == envGranLen &&
+                     mtProject.instrument[currentInstrument_idx].playMode == playModeGranular)
+            {
+                refreshMask = GRANULAR_LEN_SEND_MASK;
+            }
+            handleUpdateTriggerEnvelope(type, refreshMask);
+            return;
+        }
+        // Not (or no longer) driven by a Trigger envelope: make sure the first block it takes
+        // over again rewrites the destination, replacing whatever an LFO / step FX left there.
+        lastTriggerOutput[type] = kTriggerOutputInactive;
+
         if (type == envAmp)
         {
             uint8_t curAmpLoop = mtProject.instrument[currentInstrument_idx].envelope[envAmp].loop;
@@ -192,6 +212,39 @@ inline void playerEngine::handleUpdateEnvelope(uint8_t type, bool enableConditio
             }
         }
     }
+}
+
+AUDIO_CORE_RAM bool playerEngine::isTriggerEnvelopeActive(uint8_t type)
+{
+    const strInstrument& instr = mtProject.instrument[currentInstrument_idx];
+    if (instr.envelope[type].loop != envelopeGenerator::strEnv::kTypeTrigger)
+        return false;
+
+    const bool enabled = (type == envAmp) ? (instr.envelope[envAmp].enable != 0)
+                                          : instr.isEnvEnabled(type);
+    if (!enabled)
+        return false;
+
+    // Step FX / performance-mode LFOs on the same destination take priority, exactly as they do
+    // over the instrument's own Envelope / LFO types.
+    const uint8_t controlValue = envelopesControlValue[type];
+    return !trackControlParameter[(int)controlType::sequencerMode][controlValue] &&
+           !trackControlParameter[(int)controlType::sequencerMode2][controlValue] &&
+           !trackControlParameter[(int)controlType::performanceMode][controlValue];
+}
+
+inline void playerEngine::handleUpdateTriggerEnvelope(uint8_t type, uint32_t refreshMask)
+{
+    const float out = triggerEnvelope::evaluate(
+      mtProject.instrument[currentInstrument_idx].lfo[type], type == envAmp, sequencer.getCurrentTempo());
+
+    // Refresh while the envelope is running, plus once more when it returns to 0.
+    if (out != 0.0f || lastTriggerOutput[type] != 0.0f)
+    {
+        currentEnvelopeModification[type] = out;
+        refreshRegister |= refreshMask;
+    }
+    lastTriggerOutput[type] = out;
 }
 
 inline void playerEngine::handleUpdateEndReleaseAction()
