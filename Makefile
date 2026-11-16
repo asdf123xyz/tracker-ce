@@ -130,6 +130,8 @@ else
   host_path = $(1)
 endif
 
+# Single quotes: under WSL the paths are \\wsl.localhost\... UNC paths, and inside double
+# quotes the shell would collapse the leading \\ to \.
 deploy:
 	@test -n "$(PTF)" || { echo "usage: make deploy PTF=path/to/image.ptf [AXF=image.axf] [EXPECT_BUILD=id] [DEPLOY_ARGS=...]"; exit 1; }
 	@if [ -n "$(AXF)" ] && [ -z "$(DEPLOY_ALLOW_NO_CONSOLE)" ] && ! $(TOOLCHAIN)nm "$(AXF)" >/dev/null 2>&1; then \
@@ -144,7 +146,7 @@ deploy:
 		echo "       or set DEPLOY_ALLOW_NO_CONSOLE=1 to deploy it anyway."; \
 		exit 1; \
 	fi
-	$(DEPLOY_PYTHON) "$(call host_path,$(DEPLOY_SCRIPT))" "$(call host_path,$(abspath $(PTF)))" \
+	$(DEPLOY_PYTHON) '$(call host_path,$(DEPLOY_SCRIPT))' '$(call host_path,$(abspath $(PTF)))' \
 		$(if $(EXPECT_BUILD),--expect-build $(EXPECT_BUILD)) $(DEPLOY_ARGS)
 
 deploy-plus: plus
