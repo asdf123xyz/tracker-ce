@@ -47,6 +47,11 @@
 	* Added an opt-in USB CDC serial console (`ENABLE_DEV_CONSOLE` when a `/.develop` file is present on the SD card) with host automation commands (`ping`, `storage on|off`, `flash <name>`, `reboot`, `help`) and a ring-buffered `ENABLE_LOG` build flag that preserves release optimization levels.
 	* With `ENABLE_DEV_CONSOLE`, CPU faults report `@fault pc=... lr=...` and a rough call chain over the serial console instead of freezing silently. See [`docs/developer_guide.md`](docs/developer_guide.md).
 
+9. **Trigger Envelopes - Cross-Track Modulation (All 3 Devices)**
+	* New **`Trigger`** type in **Instrument Automation (2/2)** for all 7 destinations (**Volume**, **Panning**, **Cutoff**, **Wavetable Position**, **Granular Position**, **Granular Length**, **Finetune**).
+	* A tempo-synced envelope (**Shape**, **Steps**, **Source**, bipolar **Amount**, **Repeat** `1x`–`64x` / `Inf`) that restarts whenever the chosen **Source** instrument plays a note on any track - e.g. duck a pad's volume on every kick, pump a hi-hat's cutoff on every snare, or gate a pad four times per kick.
+	* Stored in the existing automation fields, so `.pti` files and projects keep the same layout. See [`docs/trigger_envelopes.md`](docs/trigger_envelopes.md).
+
 ### Changed & Fixed
 
 * **Faster UI Rendering & System Responsiveness (All 3 Devices)**:

@@ -6,6 +6,7 @@
 #### User Guides
 * **[Custom Themes & Fonts](custom_themes_and_fonts)**
 * **[Wavetable Envelopes & LFOs](wavetable_envelopes)**
+* **[Trigger Envelopes](trigger_envelopes)**
 * **[SD Card Image Viewer](image_viewer)**
 * **[Modular Effects (.ptfx)](modular_effects_system)**
 

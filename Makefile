@@ -23,7 +23,7 @@ MINI_POSTFIX     ?= $(EDITION_NAME)_$(MINI_VER_MAJOR).$(MINI_VER_MINOR).$(MINI_V
 
 .DEFAULT_GOAL := all
 
-.PHONY: all original plus mini ptfx psyn clean version bump-patch bump-minor
+.PHONY: all original plus mini ptfx psyn clean version bump-patch bump-minor deploy deploy-plus deploy-mini
 
 all: original plus mini psyn
 
@@ -106,6 +106,60 @@ mini:
 	@mkdir -p "$(OUT_DIR)"
 	@cp "$(IMX_DIR)/build-MINI/TrackerMini_$(MINI_POSTFIX).ptf" "$(OUT_DIR)/"
 	@echo "-> Output: $(OUT_DIR)/TrackerMini_$(MINI_POSTFIX).ptf"
+
+# ------------------------------------------------------------------------------
+# Deploy to a connected Tracker+ / Tracker Mini over the USB dev console
+# (docs/developer_guide.md, section 6). The firmware running on the device and
+# the image being deployed both need -DENABLE_DEV_CONSOLE, and the SD card
+# needs an empty /.develop file.
+#
+#   make deploy-plus CUSTOM_DEFINES="-DENABLE_DEV_CONSOLE -DENABLE_LOG"
+#   make deploy PTF=build/TrackerPlus_CE_1.0.0.ptf DEPLOY_ARGS="--follow"
+#
+# Under WSL2 the script runs with the Windows Python (python.exe, with
+# pyserial installed) so it can reach the COM port and the drive letter.
+# ------------------------------------------------------------------------------
+DEPLOY_ARGS   ?=
+DEPLOY_SCRIPT := $(ROOT_DIR)/tools/deploy.py
+IS_WSL        := $(shell grep -qi microsoft /proc/version 2>/dev/null && echo 1)
+ifeq ($(IS_WSL),1)
+  DEPLOY_PYTHON ?= python.exe
+  host_path = $(shell wslpath -w "$(1)")
+else
+  DEPLOY_PYTHON ?= python3
+  host_path = $(1)
+endif
+
+# Single quotes: under WSL the paths are \\wsl.localhost\... UNC paths, and inside double
+# quotes the shell would collapse the leading \\ to \.
+deploy:
+	@test -n "$(PTF)" || { echo "usage: make deploy PTF=path/to/image.ptf [AXF=image.axf] [EXPECT_BUILD=id] [DEPLOY_ARGS=...]"; exit 1; }
+	@if [ -n "$(AXF)" ] && [ -z "$(DEPLOY_ALLOW_NO_CONSOLE)" ] && ! $(TOOLCHAIN)nm "$(AXF)" >/dev/null 2>&1; then \
+		echo "error: cannot run $(TOOLCHAIN)nm on $(AXF) to check it has the dev console"; \
+		echo "       (set TOOLCHAIN, or DEPLOY_ALLOW_NO_CONSOLE=1 to skip the check)."; \
+		exit 1; \
+	fi
+	@if [ -n "$(AXF)" ] && [ -z "$(DEPLOY_ALLOW_NO_CONSOLE)" ] && ! $(TOOLCHAIN)nm "$(AXF)" | grep -q DevConsole_RxBytes; then \
+		echo "error: $(notdir $(AXF)) was built without ENABLE_DEV_CONSOLE; after flashing it the device"; \
+		echo "       could not be deployed to again. Rebuild with:"; \
+		echo "         make clean && make deploy-<plus|mini> CUSTOM_DEFINES=\"-DENABLE_DEV_CONSOLE -DENABLE_LOG\""; \
+		echo "       or set DEPLOY_ALLOW_NO_CONSOLE=1 to deploy it anyway."; \
+		exit 1; \
+	fi
+	$(DEPLOY_PYTHON) '$(call host_path,$(DEPLOY_SCRIPT))' '$(call host_path,$(abspath $(PTF)))' \
+		$(if $(EXPECT_BUILD),--expect-build $(EXPECT_BUILD)) $(DEPLOY_ARGS)
+
+deploy-plus: plus
+	@$(MAKE) --no-print-directory deploy \
+		PTF="$(OUT_DIR)/TrackerPlus_$(PLUS_POSTFIX).ptf" \
+		AXF="$(IMX_DIR)/build-PLUS/TrackerPlus.axf" \
+		EXPECT_BUILD="$(BUILD_ID_STR)"
+
+deploy-mini: mini
+	@$(MAKE) --no-print-directory deploy \
+		PTF="$(OUT_DIR)/TrackerMini_$(MINI_POSTFIX).ptf" \
+		AXF="$(IMX_DIR)/build-MINI/TrackerMini.axf" \
+		EXPECT_BUILD="$(BUILD_ID_STR)"
 
 ptfx:
 	@mkdir -p "$(ROOT_DIR)/editor-fx-sdk/build/Effects"

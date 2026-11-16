@@ -194,6 +194,21 @@ A scripted deployment is therefore:
 4. Reopen the port and send `flash <name>`. The device resets into the bootloader, which flashes the file.
 5. When the port reappears, `ping` again and compare the build id.
 
+[`tools/deploy.py`](../tools/deploy.py) does all of this (it needs `pyserial`). The top-level makefile wraps it:
+
+```bash
+# Build Tracker+ with the console, deploy it, and check the device reports the new build id:
+make deploy-plus CUSTOM_DEFINES="-DENABLE_DEV_CONSOLE -DENABLE_LOG"
+
+# Deploy an existing image; DEPLOY_ARGS passes options such as --follow (print the device log afterwards):
+make deploy PTF=build/TrackerPlus_CE_1.0.0.ptf DEPLOY_ARGS="--follow"
+```
+
+* The script finds the console port by USB id and the card by the `/.develop` file on the volume that mounts. Use `--port` and `--drive` if there is more than one, or if your system does not auto-mount the card.
+* `deploy-plus` / `deploy-mini` refuse an image built without `ENABLE_DEV_CONSOLE`, since the device could not be deployed to again after flashing it (override with `DEPLOY_ALLOW_NO_CONSOLE=1`).
+* A source file name that is not valid on the card (over 31 characters, or a wrong prefix) is copied as `TrackerPlus_deploy.ptf` / `TrackerMini_deploy.ptf`, or as `--name`.
+* **WSL2:** the make targets run the script with the Windows `python.exe` (override with `DEPLOY_PYTHON`), because the COM port and the mounted card are only visible to Windows. Install Python and `pyserial` on the Windows side.
+
 > **Keep the port closed when using USB storage mode from the device's own menu.** While a host holds the serial port open (for example to follow the log), the device postpones the USB re-enumeration that entering or leaving storage mode needs.
 
 > **Recovery**: a build that fails to boot has no console. Keep a known-good `.ptf` in `/Firmware/` and use the recessed reset button as described in the [README](../README.md#4-flashing-on-hardware--emergency-recovery).

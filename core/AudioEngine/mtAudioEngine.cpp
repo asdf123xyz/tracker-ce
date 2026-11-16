@@ -5,6 +5,7 @@
 #include "PolySynth/sdk/SynthVoiceSDK.h"
 #endif
 #include "SynthVoice.h"
+#include "TriggerEnvelope.h"
 #include "ampLogarythmicValues.h"
 #include "cr_section_macros.h"
 #include "metronomeBeep.h"
@@ -305,6 +306,9 @@ AUDIO_CORE_RAM void audioEngine::update()
         updateSynthParams();
 #endif
     }
+
+    // After all tracks have evaluated this block's Trigger envelopes.
+    triggerEnvelope::advanceClock();
 }
 
 void audioEngine::updateSdStream()

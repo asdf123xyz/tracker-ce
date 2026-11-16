@@ -6,6 +6,7 @@
 #endif
 #include "fileManager.h"
 #include "log.h"
+#include "TriggerEnvelope.h"
 #include "mtAudioEngine.h"
 #include "mtSequencer.h"
 #include "mtStructs.h"
@@ -1358,6 +1359,7 @@ AUDIO_CORE_RAM void Sequencer::play(uint8_t fromPos)
     songTimer.start();
 
     engine.endAllFx();
+    triggerEnvelope::reset(); // no Trigger envelope carries over from before Play
 
     reset_actual_pos();
     resetChanceState();
@@ -2529,6 +2531,10 @@ AUDIO_CORE_RAM void Sequencer::sendNoteOn(uint8_t track,
 
     if (toMidi || toSynth)
     {
+        // Sample instruments fire from playerEngine::noteOn(); MIDI and synth instruments can
+        // also act as Trigger envelope sources.
+        triggerEnvelope::fire(step->instrument);
+
         if ((step->fx[0].type == fx.FX_TYPE_MIDI_CHORD && step->fx[1].type != fx.FX_TYPE_ARP) ||
             (step->fx[1].type == fx.FX_TYPE_MIDI_CHORD && step->fx[0].type != fx.FX_TYPE_ARP))
         {

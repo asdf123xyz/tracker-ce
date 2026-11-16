@@ -1122,7 +1122,8 @@ void cFileManager::exportItFile_ProcessInstruments()
             ptr = writeLE(ptr, 0, 1);                                           // release val 0
             ptr = writeLE(ptr, attTicks + decTicks + 10 + relTicks /*rel*/, 2); // time = release
         }
-        else if (instr->envelope[0].enable && instr->envelope[0].loop)
+        else if (instr->envelope[0].enable && instr->envelope[0].loop &&
+                 instr->envelope[0].loop != envelopeGenerator::strEnv::kTypeTrigger)
         {
             ptr = buff0x52;
             buildAmpEnvelopeFromLFO(ptr, instr);
@@ -1188,7 +1189,8 @@ void cFileManager::exportItFile_ProcessInstruments()
             ptr = writeLE(ptr, 0, 1);                                           // release val 0
             ptr = writeLE(ptr, attTicks + decTicks + 10 + relTicks /*rel*/, 2); // time = release
         }
-        else if (instr->envelope[1].enable && instr->envelope[1].loop)
+        else if (instr->envelope[1].enable && instr->envelope[1].loop &&
+                 instr->envelope[1].loop != envelopeGenerator::strEnv::kTypeTrigger)
         {
             ptr = buff0x52;
             buildPanEnvelopeFromLFO(ptr, instr);
