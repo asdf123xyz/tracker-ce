@@ -2,6 +2,7 @@
 #include "mtAudioEngine.h"
 #include "mtSequencer.h"
 #include "polyassert.h"
+#include "TriggerEnvelope.h"
 
 using namespace mtAudioEngineConstans;
 
@@ -12,6 +13,7 @@ uint8_t playerEngine ::noteOn(uint8_t instr_idx, int8_t note, int8_t _velocity)
         return 0;
     if (isBlockedNoteOn[instr_idx])
         return 0;
+    triggerEnvelope::fire(instr_idx);
     //	engine.clearDelay();
 
     endFx(lastSeqFx[0], 0);
@@ -93,6 +95,7 @@ AUDIO_CORE_RAM uint8_t playerEngine ::noteOn(uint8_t instr_idx,
         return 0;
     if (isBlockedNoteOn[instr_idx])
         return 0;
+    triggerEnvelope::fire(instr_idx);
     //	__disable_irq();
     AudioNoInterrupts();
     uint8_t status;
@@ -585,7 +588,7 @@ void playerEngine::handleInitFxNoteOnEnvelope(uint8_t n)
              trackControlParameter[(int)controlType::sequencerMode2][(int)parameterList::filterAttack]))
         {
             uint8_t curFilterLoop = mtProject.instrument[currentInstrument_idx].envelope[envCutoff].loop;
-            if (curFilterLoop >= 2)
+            if (curFilterLoop == 2 || curFilterLoop == 3)
             {
                 envelopePtr[envCutoff]->setWavetableDurationMs(currentSeqModValues.filterAttack);
             }
@@ -642,7 +645,7 @@ void playerEngine::handleInitFxNoteOnAmpEnvelope()
         for (int channel = 0; channel < (int)playMemPtr.size(); channel++)
         {
             playMemPtr[channel]->envelopeAttack(currentSeqModValues.ampAttack);
-            playMemPtr[channel]->envelopeDecay(curAmpLoop >= 2 ? currentSeqModValues.ampAttack : currentSeqModValues.ampRelease);
+            playMemPtr[channel]->envelopeDecay((curAmpLoop == 2 || curAmpLoop == 3) ? currentSeqModValues.ampAttack : currentSeqModValues.ampRelease);
             playMemPtr[channel]->envelopeRelease(currentSeqModValues.ampRelease);
         }
     }

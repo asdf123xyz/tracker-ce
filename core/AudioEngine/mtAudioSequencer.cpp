@@ -698,7 +698,7 @@ void playerEngine::fxAmpEnv(uint8_t fx_val, uint8_t fx_n)
             }
         }
     }
-    else if (curLoop >= 2)
+    else if (curLoop == 2 || curLoop == 3)
     {
         float durMs = (float)mtProject.instrument[currentInstrument_idx].envelope[envAmp].decay;
         if (durMs <= 1.0f) durMs = 1000.0f;
@@ -743,7 +743,7 @@ void playerEngine::endFxAmpEnv(uint8_t fx_n)
         playMemPtr[channel]->envelopeSustain(mtProject.instrument[currentInstrument_idx].envelope[envAmp].sustain);
         playMemPtr[channel]->envelopeRelease(mtProject.instrument[currentInstrument_idx].envelope[envAmp].release);
         playMemPtr[channel]->envelopeSetWavetable(
-          mtProject.instrument[currentInstrument_idx].envelope[envAmp].loop,
+          getAmpWavetableMode(),
           mtProject.instrument[currentInstrument_idx].lfo[envAmp].shape,
           mtProject.instrument[currentInstrument_idx].lfo[envAmp].wtBend,
           mtProject.instrument[currentInstrument_idx].lfo[envAmp].wtSust);
@@ -773,7 +773,7 @@ void playerEngine::fxFilterEnv(uint8_t fx_val, uint8_t fx_n)
             envelopePtr[envCutoff]->putMidiParameter(0, 44, 0);
         }
     }
-    else if (curLoop >= 2)
+    else if (curLoop == 2 || curLoop == 3)
     {
         float durMs = (float)mtProject.instrument[currentInstrument_idx].envelope[envCutoff].decay;
         if (durMs <= 1.0f) durMs = 1000.0f;
@@ -2112,6 +2112,12 @@ float playerEngine::getMostSignificantAmount()
             {
                 localAmount = mtProject.instrument[currentInstrument_idx].lfo[envAmp].amount;
             }
+            else if (curAmpLoop == envelopeGenerator::strEnv::kTypeTrigger)
+            {
+                // The amp envelope runs as a plain gate; the Trigger envelope scales the gain
+                // (negative amount ducks towards silence, positive boosts up to +6 dB).
+                localAmount = clamp<float>(1.0f + currentEnvelopeModification[envAmp], 0.0f, 2.0f);
+            }
             else
             {
                 localAmount = mtProject.instrument[currentInstrument_idx].envelope[envAmp].amount;
@@ -2166,6 +2172,13 @@ uint8_t playerEngine::getMostSignificantVolume()
 
 void playerEngine::initEnvelopesParameters(uint8_t n, envelopeGenerator::strEnv* env)
 {
+    if (n == envAmp && env->loop == envelopeGenerator::strEnv::kTypeTrigger)
+    {
+        // Trigger envelopes are evaluated in update(); the amp envelope acts as a plain gate.
+        // (Other slots' generators idle themselves in envelopeGenerator::init().)
+        env = (envelopeGenerator::strEnv*)&passEnvelope;
+    }
+
     if (n == envAmp)
     {
         for (int channel = 0; channel < (int)playMemPtr.size(); channel++)
@@ -2205,6 +2218,12 @@ void playerEngine::initEnvelopesParameters(uint8_t n, envelopeGenerator::strEnv*
           mtProject.instrument[currentInstrument_idx].lfo[n].wtBend,
           mtProject.instrument[currentInstrument_idx].lfo[n].wtSust);
     }
+}
+
+uint8_t playerEngine::getAmpWavetableMode()
+{
+    const uint8_t loop = mtProject.instrument[currentInstrument_idx].envelope[envAmp].loop;
+    return (loop == envelopeGenerator::strEnv::kTypeTrigger) ? 0 : loop;
 }
 
 AUDIO_CORE_RAM bool playerEngine::isActiveEnvelope(uint8_t type)
@@ -2330,7 +2349,7 @@ void playerEngine::setSyncParamsAmpLFO()
             playMemPtr[channel]->envelopeSetSyncRate(tempoSyncRatesAmp[(localRate >= ENVELOPE_SPEED_AMP_COUNT) ? 0 : localRate]);
             playMemPtr[channel]->envelopeSetSyncStartStep(sequencer.getActualPos());
             playMemPtr[channel]->envelopeSetWavetable(
-              mtProject.instrument[currentInstrument_idx].envelope[envAmp].loop,
+              getAmpWavetableMode(),
               mtProject.instrument[currentInstrument_idx].lfo[envAmp].shape,
               mtProject.instrument[currentInstrument_idx].lfo[envAmp].wtBend,
               mtProject.instrument[currentInstrument_idx].lfo[envAmp].wtSust);

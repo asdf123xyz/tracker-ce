@@ -1,5 +1,6 @@
 #include "core/songTimer.h"
 #include "instrumentEditor/instrumentEditor.h"
+#include "TriggerEnvelope.h"
 #include "mtWavetableEnvelopes.h"
 #include "fileManager.h"
 #include <stdio.h>
@@ -82,7 +83,10 @@ const char* const envelopesLabels[autoDestCount] = {
     "Finetune"
 };
 
-const char* const envStateLabels[5] = { "Off", "Envelope", "LFO", "WT Env", "WT LFO" };
+static constexpr uint8_t kEnvTypeTrigger = envelopeGenerator::strEnv::kTypeTrigger;
+static constexpr uint8_t kEnvStateCount = 6;
+const char* const envStateLabels[kEnvStateCount] = { "Off",    "Envelope", "LFO",
+                                                     "WT Env", "WT LFO",   "Trigger" };
 
 const char* const lfoShapeLabels[lfoShapeCount] = { "Rev Saw",
                                                     "Saw",
@@ -207,9 +211,9 @@ void cInstrumentEditor::initDisplayControls()
     prop.data = &list1Data;
     list1Control = display.createControl<cList>(&prop);
 
-    list2Data.linesCount = 5;
+    list2Data.linesCount = kEnvStateCount;
     list2Data.start = 0;
-    list2Data.length = 5;
+    list2Data.length = kEnvStateCount;
     list2Data.data = (char**)envStateLabels;
     prop.x = (800 / 8) * (2) + 1;
     prop.y = 29;
@@ -456,10 +460,12 @@ void cInstrumentEditor::showInstrumentEnv()
         curStateIdx = 3;
     else if (editorInstrument->envelope[envSlot].loop == 3)
         curStateIdx = 4;
+    else if (editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+        curStateIdx = 5;
 
-    list2Data.linesCount = 5;
+    list2Data.linesCount = kEnvStateCount;
     list2Data.start = curStateIdx;
-    list2Data.length = 5;
+    list2Data.length = kEnvStateCount;
     list2Data.data = (char**)envStateLabels;
     list2Data.lineTextLenMax = 0;
 
@@ -643,6 +649,56 @@ void cInstrumentEditor::showInstrumentEnv()
         showWtWarpX();
         showWtWarpY();
         showLfoAmount();
+    }
+    else if (curLoop == kEnvTypeTrigger)
+    {
+        display.setControlText(label[3], "Shape");
+        display.setControlText(label[4], "Steps");
+        display.setControlText(label[5], "Source");
+        display.setControlText(label[6], "Amount");
+        display.setControlText(label[7], "Repeat");
+
+        display.setControlValue(bgLabel, 252);
+        display.refreshControl(bgLabel);
+
+        display.setControlHide(barControl[3]);
+        display.setControlHide(barControl[4]);
+        display.setControlShow(barControl[5]);
+        display.setControlStyle(
+          barControl[6],
+          (controlStyleShow | controlStyleValueLeftRight_100_100 | controlStyleBackground) | shadow |
+            gradient);
+        display.setControlShow(barControl[7]);
+
+        uint8_t curSpeed = editorInstrument->lfo[envSlot].speed;
+        uint8_t maxSpeed = (envSlot == envAmp) ? CONSTRAIN_SPEED_AMP_ENVELOPE : CONSTRAIN_SPEED_OTHER_ENVELOPE;
+        if (curSpeed > maxSpeed)
+        {
+            curSpeed = 0;
+            editorInstrument->lfo[envSlot].speed = 0;
+        }
+
+        if (envSlot == envAmp)
+        {
+            list4Data.data = (char**)(lfoSpeedLabels + ENVELOPE_SPEED_CONSTRAIN_OFFSET);
+            list4Data.length = ENVELOPE_SPEED_AMP_COUNT;
+        }
+        else
+        {
+            list4Data.data = (char**)lfoSpeedLabels;
+            list4Data.length = ENVELOPE_SPEED_OTHER_COUNT;
+        }
+        list4Data.start = curSpeed;
+        display.setControlData(list4Control, &list4Data);
+
+        showLfoShape();
+        showLfoSpeed();
+        showTriggerSource();
+        showLfoAmount();
+        showTriggerRepeat();
+
+        display.setControlShow(list3Control);
+        display.setControlShow(list4Control);
     }
 
     display.setControlStyle2(doubleLabelAutomation, controlStyleCenterX | controlStyleFont2);
@@ -1214,6 +1270,8 @@ void cInstrumentEditor::showEnvState()
         val = 3;
     else if (editorInstrument->envelope[envSlot].loop == 3)
         val = 4;
+    else if (editorInstrument->envelope[envSlot].loop == kEnvTypeTrigger)
+        val = 5;
 
     display.setControlText2(label[2], envStateLabels[val]);
     display.refreshControl(label[2]);
@@ -1298,6 +1356,54 @@ void cInstrumentEditor::showWtSustain()
     display.refreshControl(label[6]);
     display.setControlValue(barControl[6], sust);
     display.refreshControl(barControl[6]);
+}
+
+void cInstrumentEditor::showTriggerSource()
+{
+    const uint8_t envSlot = automationDestToEnvSlot(selectedEnvelope);
+    uint8_t source = editorInstrument->lfo[envSlot].wtBend;
+    if (source >= kTotalInstrumentsCount)
+    {
+        source = 0;
+        editorInstrument->lfo[envSlot].wtBend = 0;
+    }
+
+    // Same instrument naming as the pattern editor: 01-48, M01-M16, S1-S3
+    if (source >= SYNTH_INSTRUMENTS_START_IDX)
+        snprintf(labelText[5], sizeof(labelText[5]), "S%d", source - SYNTH_INSTRUMENTS_START_IDX + 1);
+    else if (source >= MIDI_INSTRUMENTS_START_IDX)
+        snprintf(labelText[5], sizeof(labelText[5]), "M%02d", source - MIDI_INSTRUMENTS_START_IDX + 1);
+    else
+        snprintf(labelText[5], sizeof(labelText[5]), "%02d", source + 1);
+
+    display.setControlText2(label[5], labelText[5]);
+    display.refreshControl(label[5]);
+    display.setControlValue(barControl[5], (source * 100) / (kTotalInstrumentsCount - 1));
+    display.refreshControl(barControl[5]);
+}
+
+void cInstrumentEditor::showTriggerRepeat()
+{
+    const uint8_t envSlot = automationDestToEnvSlot(selectedEnvelope);
+    const uint8_t stored = editorInstrument->lfo[envSlot].wtSust;
+    int barValue = 100;
+
+    if (stored == triggerEnvelope::kRepeatInfinite)
+    {
+        snprintf(labelText[7], sizeof(labelText[7]), "Inf");
+    }
+    else
+    {
+        const int repeats = (stored <= 1 || stored > triggerEnvelope::kRepeatMax) ? 1 : stored;
+        snprintf(labelText[7], sizeof(labelText[7]), "%dx", repeats);
+        // Inf sits one position past kRepeatMax, so keep it as the only full bar.
+        barValue = ((repeats - 1) * 100) / triggerEnvelope::kRepeatMax;
+    }
+
+    display.setControlText2(label[7], labelText[7]);
+    display.refreshControl(label[7]);
+    display.setControlValue(barControl[7], barValue);
+    display.refreshControl(barControl[7]);
 }
 
 void cInstrumentEditor::showEnvAttack()
@@ -1497,10 +1603,11 @@ void cInstrumentEditor::showLfoSpeed()
 void cInstrumentEditor::showLfoAmount()
 {
     const uint8_t envSlot = automationDestToEnvSlot(selectedEnvelope);
-    uint8_t col = (editorInstrument->envelope[envSlot].loop == 3) ? 7 : 5;
+    const uint8_t curLoop = editorInstrument->envelope[envSlot].loop;
+    uint8_t col = (curLoop == 3) ? 7 : ((curLoop == kEnvTypeTrigger) ? 6 : 5);
     snprintf(labelText[col],
              sizeof(labelText[col]),
-             "%.0f",
+             (curLoop == kEnvTypeTrigger) ? "%+.0f" : "%.0f",
              (float)(editorInstrument->lfo[envSlot].amount * 100));
     display.setControlText2(label[col], labelText[col]);
     display.refreshControl(label[col]);
